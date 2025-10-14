@@ -149,12 +149,7 @@ fun main() {
             ) { databasePluginResult: String ->
                 println("📊 DatabasePlugin completed with: $databasePluginResult")
 
-                plugin(
-                    plugin = NotificationPlugin(),
-                    arg = databasePluginResult
-                ) { notificationPluginResult ->
-                    println("📊 NotificationPlugin completed with: $notificationPluginResult")
-                }
+                plugin(plugin = NotificationPlugin())
             }
         }
     }
