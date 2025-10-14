@@ -7,64 +7,11 @@ interface Plugin<T, R> {
 class PluginNode<T, R>(
     val plugin: Plugin<T, R>,
     val children: MutableList<PluginNode<*, *>> = mutableListOf()
-) {
-    var cachedResult: R? = null
-    var hasExecuted: Boolean = false
-
-    fun execute(input: T? = null): R {
-        if (!hasExecuted) {
-            cachedResult = plugin.execute(input)
-            hasExecuted = true
-        }
-        return cachedResult!!
-    }
-
-    fun reset() {
-        hasExecuted = false
-        cachedResult = null
-        children.forEach { it.reset() }
-    }
-}
+)
 
 class PluginRegistry {
     val roots = mutableListOf<PluginNode<*, *>>()
     val allPlugins = mutableMapOf<Class<*>, PluginNode<*, *>>()
-
-    private fun <T, R> getNode(pluginClass: Class<out Plugin<T, R>>): PluginNode<T, R>? {
-        return allPlugins[pluginClass] as? PluginNode<T, R>
-    }
-
-    fun <T, R> execute(pluginClass: Class<out Plugin<T, R>>, input: T? = null): R {
-        val node = getNode(pluginClass) ?: throw IllegalArgumentException("Plugin ${pluginClass.simpleName} not found")
-        return node.execute(input)
-    }
-
-    fun <T, R> executeTree(pluginClass: Class<out Plugin<T, R>>, input: T? = null): Map<Class<*>, Any> {
-        val results = mutableMapOf<Class<*>, Any>()
-
-        // Reset all plugins before execution
-        roots.forEach { it.reset() }
-
-        fun executeNode(node: PluginNode<*, *>, parentInput: Any?, parentResult: Any?): Any {
-            val inputForNode = parentResult ?: parentInput
-
-            @Suppress("UNCHECKED_CAST")
-            val currentNode = node as PluginNode<Any?, Any>
-            val result = currentNode.execute(inputForNode)
-            results[node.plugin::class.java] = result
-
-            node.children.forEach { child ->
-                executeNode(child, inputForNode, result)
-            }
-
-            return result
-        }
-
-        val rootNode = getNode(pluginClass) ?: throw IllegalArgumentException("Plugin ${pluginClass.simpleName} not found")
-        executeNode(rootNode, input, null)
-
-        return results
-    }
 }
 
 class PluginTreeBuilder {
@@ -98,6 +45,13 @@ class PluginBranchBuilder<ParentT : Plugin<PI, PO>, PI, PO>(
 ) {
     fun <T : Plugin<I, O>, I, O> plugin(
         plugin: T,
+        arg: I? = null
+    ) {
+        plugin(plugin = plugin, arg = arg, block = {})
+    }
+
+    fun <T : Plugin<I, O>, I, O> plugin(
+        plugin: T,
         arg: I? = null,
         block: PluginBranchBuilder<T, I, O>.(O) -> Unit
     ) {
@@ -110,18 +64,6 @@ class PluginBranchBuilder<ParentT : Plugin<PI, PO>, PI, PO>(
 
         val branchBuilder = PluginBranchBuilder<T, I, O>(node, executionContext)
         branchBuilder.block(result)
-    }
-
-    fun <T : Plugin<I, O>, I, O> plugin(
-        plugin: T,
-        arg: I? = null
-    ) {
-        val node = PluginNode(plugin)
-        parentNode.children.add(node)
-
-        val input = arg ?: (executionContext[parentNode.plugin::class.java] as? PI)
-        val result = plugin.execute(input as? I)
-        executionContext[plugin::class.java] = result as Any
     }
 }
 
@@ -174,39 +116,31 @@ class NotificationPlugin : Plugin<String, String> {
 
 fun main() {
     println("=== Plugin Tree System with Custom Arguments ===")
-
-    val startPlugin = StartPlugin()
-    val authPlugin = AuthPlugin()
-    val syncPlugin = SyncPlugin()
-    val validationPlugin = ValidationPlugin()
-    val databasePlugin = DatabasePlugin()
-    val notificationPlugin = NotificationPlugin()
-
     println("\n=== Building Plugin Tree (With Custom Args) ===")
 
-    val registry = libraryTree {
+    libraryTree {
         rootPlugin(
-            plugin = startPlugin,
+            plugin = StartPlugin(),
             input = "initial-config"
         ) { startPluginResult ->
             println("📊 StartPlugin completed with: $startPluginResult")
 
             plugin(
-                plugin = authPlugin,
+                plugin = AuthPlugin(),
                 arg = startPluginResult
             ) { authPluginResult ->
                 println("📊 AuthPlugin completed with: $authPluginResult")
 
                 plugin(
-                    plugin = syncPlugin,
+                    plugin = SyncPlugin(),
                     arg = "$startPluginResult|$authPluginResult"
                 ) { syncPluginResult ->
                     println("📊 SyncPlugin completed with: $syncPluginResult")
-                    println("   ↳ Combined input from both parents!")
+                    println("Combined input from both parents!")
                 }
 
                 plugin(
-                    plugin = validationPlugin,
+                    plugin = ValidationPlugin(),
                     arg = authPluginResult
                 ) { validationPluginResult ->
                     println("📊 ValidationPlugin completed with: $validationPluginResult")
@@ -214,13 +148,13 @@ fun main() {
             }
 
             plugin(
-                plugin = databasePlugin,
+                plugin = DatabasePlugin(),
                 arg = startPluginResult
             ) { databasePluginResult: String ->
                 println("📊 DatabasePlugin completed with: $databasePluginResult")
 
                 plugin(
-                    plugin = notificationPlugin,
+                    plugin = NotificationPlugin(),
                     arg = databasePluginResult
                 ) { notificationPluginResult ->
                     println("📊 NotificationPlugin completed with: $notificationPluginResult")
