@@ -9,13 +9,8 @@ class PluginNode<T, R>(
     val children: MutableList<PluginNode<*, *>> = mutableListOf()
 )
 
-class PluginRegistry {
-    val roots = mutableListOf<PluginNode<*, *>>()
-    val allPlugins = mutableMapOf<Class<*>, PluginNode<*, *>>()
-}
-
 class PluginTreeBuilder {
-    private val registry = PluginRegistry()
+    private val allPlugins = mutableMapOf<Class<*>, PluginNode<*, *>>()
     private val executionContext = mutableMapOf<Class<*>, Any>()
 
     fun <T : Plugin<I, O>, I, O> rootPlugin(
@@ -24,8 +19,7 @@ class PluginTreeBuilder {
         block: PluginBranchBuilder<T, I, O>.(O) -> Unit
     ): PluginTreeBuilder {
         val node = PluginNode(plugin)
-        registry.allPlugins[plugin::class.java] = node
-        registry.roots.add(node)
+        allPlugins[plugin::class.java] = node
 
         val result = plugin.execute(input)
         executionContext[plugin::class.java] = result as Any
@@ -35,8 +29,6 @@ class PluginTreeBuilder {
 
         return this
     }
-
-    fun build(): PluginRegistry = registry
 }
 
 class PluginBranchBuilder<ParentT : Plugin<PI, PO>, PI, PO>(
@@ -71,8 +63,8 @@ class PluginBranchBuilder<ParentT : Plugin<PI, PO>, PI, PO>(
     }
 }
 
-fun libraryTree(block: PluginTreeBuilder.() -> Unit): PluginRegistry {
-    return PluginTreeBuilder().apply(block).build()
+fun libraryTree(block: PluginTreeBuilder.() -> Unit) {
+    PluginTreeBuilder().apply(block)
 }
 
 class StartPlugin : Plugin<String, String> {
