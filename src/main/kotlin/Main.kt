@@ -47,7 +47,11 @@ class PluginBranchBuilder<ParentT : Plugin<PI, PO>, PI, PO>(
         plugin: T,
         arg: I? = null
     ) {
-        plugin(plugin = plugin, arg = arg, block = {})
+        plugin(
+            plugin = plugin,
+            arg = arg,
+            block = {}
+        )
     }
 
     fun <T : Plugin<I, O>, I, O> plugin(
@@ -164,38 +168,4 @@ fun main() {
     }
 
     println("\n✅ Plugin tree built successfully with custom arguments!")
-
-//    println("\n=== Advanced Examples with Custom Args ===")
-//
-//    val advancedRegistry = libraryTree {
-//        rootPlugin(plugin = startPlugin, input = "advanced-setup") { startResult ->
-//            println("\n🔧 Building complex pipeline...")
-//
-//            plugin(
-//                plugin = authPlugin,
-//                arg = "custom-auth-input-based-on-$startResult"
-//            ) { authResult ->
-//                println("📊 Custom auth with special input: $authResult")
-//            }
-//
-//            plugin(
-//                plugin = syncPlugin,
-//                arg = startResult.uppercase()
-//            ) { syncResult ->
-//                println("📊 Sync with uppercase input: $syncResult")
-//            }
-//
-//            plugin(plugin = authPlugin, arg = startResult) { authResult2 ->
-//                val combinedArg = "combined:${startResult.take(5)}|${authResult2.take(5)}"
-//                plugin(
-//                    plugin = validationPlugin,
-//                    arg = combinedArg
-//                ) { validationResult ->
-//                    println("📊 Validation with combined args: $validationResult")
-//                }
-//            }
-//        }
-//    }
-//
-//    println("\n✅ Advanced examples completed!")
 }
