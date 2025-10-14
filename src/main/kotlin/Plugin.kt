@@ -1,6 +1,10 @@
 package org.pet.project
 
 
-interface Plugin<INPUT, OUTPUT> {
-    fun execute(input: INPUT? = null): OUTPUT
+/**
+ * I - input arguments for plugin
+ * O - output/return value of plugin
+ */
+interface Plugin<I, O> {
+    fun execute(input: I? = null): O
 }

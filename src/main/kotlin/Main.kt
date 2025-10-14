@@ -16,22 +16,22 @@ fun main() {
         ) {
             plugin(
                 plugin = authPlugin,
-                executor = { parentResult -> authPlugin.execute(parentResult) }
+                executor = { startPluginResult -> authPlugin.execute(startPluginResult) }
             ) {
                 plugin(
                     plugin = syncPlugin,
-                    executor = { authResult -> syncPlugin.execute(authResult) }
+                    executor = { authPluginResult -> syncPlugin.execute(authPluginResult) }
                 )
 
                 plugin(
                     plugin = validationPlugin,
-                    executor = { authResult -> validationPlugin.execute(authResult) }
+                    executor = { authPluginResult -> validationPlugin.execute(authPluginResult) }
                 )
             }
 
             plugin(
                 plugin = databasePlugin,
-                executor = { startResult -> databasePlugin.execute(startResult) }
+                executor = { startPluginResult -> databasePlugin.execute(startPluginResult) }
             )
         }
     }
