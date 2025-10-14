@@ -1,109 +1,146 @@
 package org.pet.project
 
-interface Plugin {
-    fun execute()
+interface Plugin<T, R> {
+    fun execute(input: T? = null): R
 }
 
-class ServiceLocator private constructor() : Plugin {
-    @PublishedApi
-    internal val services = mutableMapOf<Class<*>, Plugin>()
+class PluginNode<T, R>(
+    val pluginClass: Class<out Plugin<T, R>>,
+    val executor: (T?) -> R,
+    val children: MutableList<PluginNode<*, *>> = mutableListOf()
+)
 
-    @PublishedApi
-    internal val factories = mutableMapOf<Class<*>, ServiceLocator.() -> Plugin>()
+class PluginRegistry {
+    val roots = mutableListOf<PluginNode<*, *>>()
+    val allPlugins = mutableMapOf<Class<*>, PluginNode<*, *>>()
 
-    class Builder {
-        @PublishedApi
-        internal val factories = mutableMapOf<Class<*>, ServiceLocator.() -> Plugin>()
-
-        inline fun <reified T : Plugin> registerLazy(noinline factory: ServiceLocator.() -> T): Builder {
-            this.factories[T::class.java] = factory as ServiceLocator.() -> Plugin
-            return this
-        }
-
-        fun build(): ServiceLocator {
-            val locator = ServiceLocator()
-            locator.factories.putAll(factories)
-            return locator
-        }
+    fun <T, R> getNode(pluginClass: Class<out Plugin<T, R>>): PluginNode<T, R>? {
+        return allPlugins[pluginClass] as? PluginNode<T, R>
     }
 
-    inline fun <reified T : Plugin> get(): T {
-        // Check if already instantiated
-        services[T::class.java]?.let {
-            return it as T
-        }
-
-        // Check factories and instantiate
-        factories[T::class.java]?.let { factory ->
-            val service = factory(this)
-            services[T::class.java] = service
-            factories.remove(T::class.java)
-            return service as T
-        }
-
-        throw IllegalStateException("Service ${T::class.java.simpleName} not found")
+    fun <T, R> execute(pluginClass: Class<out Plugin<T, R>>, input: T? = null): R {
+        val node = getNode(pluginClass) ?: throw IllegalArgumentException("Plugin ${pluginClass.simpleName} not found")
+        return node.executor(input)
     }
 
-    inline fun <reified T : Plugin> isRegistered(): Boolean {
-        return services.containsKey(T::class.java) || factories.containsKey(T::class.java)
-    }
+    fun <T, R> executeTree(pluginClass: Class<out Plugin<T, R>>, input: T? = null): Map<Class<*>, Any> {
+        val results = mutableMapOf<Class<*>, Any>()
 
-    fun clear() {
-        services.clear()
-        factories.clear()
-    }
+        fun executeNode(node: PluginNode<*, *>, parentInput: Any?, parentResult: Any?): Any {
+            // Use parent result as input if available, otherwise use provided input
+            val inputForNode = parentResult ?: parentInput
 
-    override fun execute() {
-        factories.keys.toList().forEach { key ->
-            // Force instantiation of all services
-            val service = factories[key]?.invoke(this)
-            if (service != null) {
-                services[key] = service
+            @Suppress("UNCHECKED_CAST")
+            val currentNode = node as PluginNode<Any?, Any>
+            val result = currentNode.executor(inputForNode)
+            results[node.pluginClass] = result
+
+            node.children.forEach { child ->
+                executeNode(child, inputForNode, result)
             }
+
+            return result
         }
-        factories.clear()
 
-        // Execute all instantiated services
-        services.values.forEach { it.execute() }
+        val rootNode = getNode(pluginClass) ?: throw IllegalArgumentException("Plugin ${pluginClass.simpleName} not found")
+        executeNode(rootNode, input, null)
+
+        return results
     }
 }
 
-class AuthenticationService(
-    private val username: String,
-    private val password: String
-) : Plugin {
-    override fun execute() {
-        println("AuthenticationService execute...")
+class PluginTreeBuilder {
+    val registry = PluginRegistry()
+
+    inline fun <reified T : Plugin<I, O>, I, O> rootPlugin(
+        noinline executor: (I?) -> O,
+        block: PluginBranchBuilder<T, I, O>.() -> Unit = {}
+    ): PluginTreeBuilder {
+        val node = PluginNode(T::class.java, executor)
+        registry.allPlugins[T::class.java] = node
+        registry.roots.add(node)
+
+        // Create branch builder and apply the block
+        val branchBuilder = PluginBranchBuilder<T, I, O>(node)
+        branchBuilder.block()
+
+        return this
+    }
+
+    fun build(): PluginRegistry = registry
+}
+
+class PluginBranchBuilder<ParentT : Plugin<PI, PO>, PI, PO>(
+    val parentNode: PluginNode<PI, PO>
+) {
+    inline fun <reified T : Plugin<I, O>, I, O> plugin(
+        noinline executor: (I?) -> O,
+        block: PluginBranchBuilder<T, I, O>.() -> Unit = {}
+    ) {
+        val node = PluginNode(T::class.java, executor)
+        parentNode.children.add(node)
+
+        PluginBranchBuilder<T, I, O>(node).block()
     }
 }
 
-class UserService(
-    private val username: String,
-    private val authenticationService: AuthenticationService
-) : Plugin {
-    override fun execute() {
-        println("start UserService=======")
-        println("UserService execute...")
-        authenticationService.execute()
-        println("finish UserService======")
-    }
+fun pluginTree(block: PluginTreeBuilder.() -> Unit): PluginRegistry {
+    return PluginTreeBuilder().apply(block).build()
 }
+
+interface StartPlugin : Plugin<String, String>
+interface AuthPlugin : Plugin<String, String>
+interface SyncPlugin : Plugin<String, String>
+interface ValidationPlugin : Plugin<String, String>
+interface DatabasePlugin : Plugin<String, String>
 
 fun main() {
-    val lib = ServiceLocator.Builder()
+    println("=== Fixed Tree-Based Plugin System ===")
 
-        .registerLazy {
-            UserService(
-                username = "admin",
-                authenticationService = get<AuthenticationService>()
+    val registry = pluginTree {
+        // Make sure the executor lambda is properly placed
+        rootPlugin<StartPlugin, String, String>(
+            executor = { input ->
+                val data = input ?: "default-data"
+                println("🌱 StartPlugin executing with: $data")
+                "start-result-$data"
+            }
+        ) {
+            plugin<AuthPlugin, String, String>(
+                executor = { parentResult ->
+                    println("🔐 AuthPlugin received from parent: $parentResult")
+                    "auth-result-$parentResult"
+                }
+            ) {
+                plugin<SyncPlugin, String, String>(
+                    executor = { authResult ->
+                        println("🔄 SyncPlugin received from auth: $authResult")
+                        "sync-complete-$authResult"
+                    }
+                )
+
+                plugin<ValidationPlugin, String, String>(
+                    executor = { authResult ->
+                        println("✅ ValidationPlugin received from auth: $authResult")
+                        "validated-$authResult"
+                    }
+                )
+            }
+
+            plugin<DatabasePlugin, String, String>(
+                executor = { startResult ->
+                    println("🗄️ DatabasePlugin received from start: $startResult")
+                    "db-ready-$startResult"
+                }
             )
         }
-        .registerLazy {
-            AuthenticationService(
-                username = "admin",
-                password = "1234"
-            )
-        }
-        .build()
-        .execute()
+    }
+
+    println("\n=== Executing Plugin Tree ===")
+    val results = registry.executeTree(StartPlugin::class.java, "test-input")
+
+    println("\n=== All Results ===")
+    results.forEach { (pluginClass, result) ->
+        println("${pluginClass.simpleName}: $result")
+    }
 }
