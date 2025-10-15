@@ -1,14 +1,14 @@
 import kotlinx.coroutines.runBlocking
 
 
-fun initZapLib() = runBlocking {
+fun ZapLib.initZapLib() = runBlocking {
     println("=== Plugin Tree System with Custom Arguments ===")
     println("\n=== Building Plugin Tree (With Custom Args) ===")
 
     libraryTree {
         rootPlugin(
             plugin = StartPlugin(),
-            input = "initial-config"
+            input = "initial-config = ${this@initZapLib.environment}"
         ) { startPluginResult ->
             println("StartPlugin\t\t\tcompleted with: $startPluginResult")
 
