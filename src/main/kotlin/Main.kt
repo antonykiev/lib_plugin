@@ -125,13 +125,13 @@ fun main() {
                 plugin = AuthPlugin(),
                 arg = startPluginResult
             ) { authPluginResult ->
-                println("📊 AuthPlugin completed with: $authPluginResult")
+                println("AuthPlugin completed with: $authPluginResult")
 
                 plugin(
                     plugin = SyncPlugin(),
                     arg = "$startPluginResult|$authPluginResult"
                 ) { syncPluginResult ->
-                    println("📊 SyncPlugin completed with: $syncPluginResult")
+                    println("SyncPlugin completed with: $syncPluginResult")
                     println("Combined input from both parents!")
                 }
 
@@ -139,7 +139,7 @@ fun main() {
                     plugin = ValidationPlugin(),
                     arg = authPluginResult
                 ) { validationPluginResult ->
-                    println("📊 ValidationPlugin completed with: $validationPluginResult")
+                    println("ValidationPlugin completed with: $validationPluginResult")
                 }
             }
 
@@ -147,7 +147,7 @@ fun main() {
                 plugin = DatabasePlugin(),
                 arg = startPluginResult
             ) { databasePluginResult: String ->
-                println("📊 DatabasePlugin completed with: $databasePluginResult")
+                println("DatabasePlugin completed with: $databasePluginResult")
 
                 plugin(plugin = NotificationPlugin())
             }
