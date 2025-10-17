@@ -12,9 +12,9 @@ import kotlinx.coroutines.supervisorScope
 suspend fun ZapLib.initZapLib() = runBlocking {
     val startPlugin = StartPlugin()
 
-
     val authPlugin = AuthPlugin()
     val syncPlugin = SyncPlugin()
+    val validationPlugin = ValidationPlugin()
 
     launch {
         startPlugin.invoke(Unit)
@@ -25,8 +25,6 @@ suspend fun ZapLib.initZapLib() = runBlocking {
                 syncPlugin.invoke(SyncPluginArgument(it.value.environment))
             }
     }
-
-    val validationPlugin = ValidationPlugin()
 
     launch {
         combine(
