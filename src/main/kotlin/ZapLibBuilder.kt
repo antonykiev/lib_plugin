@@ -7,7 +7,7 @@ suspend fun ZapLib(block: ZapLibBuilder.() -> Unit): ZapLib {
 class ZapLibBuilder {
     var environment = "DEV"
 
-    fun start(): ZapLib {
+    suspend fun start(): ZapLib {
         return ZapLib(
             environment = environment
         ).start()

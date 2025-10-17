@@ -3,5 +3,5 @@
 class ZapLib(
     val environment: String
 ) {
-    fun start(): ZapLib = this.apply { initZapLib() }
+    suspend fun start(): ZapLib = this.apply { initZapLib() }
 }

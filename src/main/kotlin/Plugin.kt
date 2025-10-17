@@ -1,5 +1,14 @@
+import kotlinx.coroutines.flow.Flow
 
 
-interface Plugin<T, R> {
-    suspend fun execute(input: T? = null): R
+interface Plugin<A> {
+    val result: Flow<PluginResult>
+    suspend operator fun invoke(argument: A)
+}
+
+sealed interface PluginResult {
+    data object Empty: PluginResult
+    data class Value<R>(
+        val value: R
+    ): PluginResult
 }

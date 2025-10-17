@@ -1,44 +1,95 @@
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.update
 
 
-class StartPlugin : Plugin<String, String> {
-    override suspend fun execute(input: String?): String {
-        val data = input ?: "default-data"
-        println("StartPlugin\t\t\texecuting with: $data")
-        return "start-result-$data"
+class StartPlugin : Plugin<Unit> {
+    private val _result = MutableStateFlow<PluginResult>(PluginResult.Empty)
+    override val result: Flow<PluginResult> = _result
+
+    override suspend fun invoke(argument: Unit) {
+        println("START running StartPlugin argument $argument")
+        delay(100)
+        _result.update {
+            PluginResult.Value<StartPluginResult>(
+                value = StartPluginResult()
+            )
+        }
     }
+
+    data class StartPluginResult(
+        val environment: String = "DEV"
+    )
 }
 
-class AuthPlugin : Plugin<String, String> {
-    override suspend fun execute(input: String?): String {
-        println("AuthPlugin\t\t\texecuting with: $input")
-        return "auth-result-$input-${System.currentTimeMillis()}"
+class AuthPlugin : Plugin<AuthPlugin.AuthPluginArgument> {
+    private val _result = MutableStateFlow<PluginResult>(PluginResult.Empty)
+    override val result: Flow<PluginResult> = _result
+
+    override suspend fun invoke(argument: AuthPluginArgument) {
+        println("START running AuthPlugin argument $argument")
+        delay(200)
+        _result.update {
+            PluginResult.Value<AuthPluginResult>(
+                value = AuthPluginResult(
+                    value = "AuthPluginResult SUCCESS! env:${argument.environment}"
+                )
+            )
+        }
     }
+
+    data class AuthPluginArgument(
+        val environment: String
+    )
+
+    data class AuthPluginResult(
+        val value: String
+    )
 }
 
-class SyncPlugin : Plugin<String, String> {
-    override suspend fun execute(input: String?): String {
-        println("SyncPlugin\t\t\texecuting with: $input")
-        return "sync-complete-$input"
+class SyncPlugin : Plugin<SyncPlugin.SyncPluginArgument> {
+    private val _result = MutableStateFlow<PluginResult>(PluginResult.Empty)
+    override val result: Flow<PluginResult> = _result
+
+    override suspend fun invoke(argument: SyncPluginArgument) {
+        println("START running SyncPlugin argument $argument")
+        delay(300)
+        _result.update {
+            PluginResult.Value<SyncPluginResult>(
+                value = SyncPluginResult()
+            )
+        }
     }
+
+    data class SyncPluginArgument(
+        val value: String
+    )
+
+    data class SyncPluginResult(
+        val value: String = "SyncPluginResult SUCCESS!"
+    )
 }
 
-class ValidationPlugin : Plugin<String, String> {
-    override suspend fun execute(input: String?): String {
-        println("ValidationPlugin\t\texecuting with: $input")
-        return "validated-$input"
-    }
-}
+class ValidationPlugin : Plugin<ValidationPlugin.ValidationPluginArgument> {
+    private val _result = MutableStateFlow<PluginResult>(PluginResult.Empty)
+    override val result: Flow<PluginResult> = _result
 
-class DatabasePlugin : Plugin<String, String> {
-    override suspend fun execute(input: String?): String {
-        println("DatabasePlugin\t\t\texecuting with: $input")
-        return "db-ready-$input"
+    override suspend fun invoke(argument: ValidationPluginArgument) {
+        println("START running ValidationPlugin argument $argument")
+        delay(300)
+        _result.update {
+            PluginResult.Value<ValidationPluginResult>(
+                value = ValidationPluginResult()
+            )
+        }
     }
-}
 
-class NotificationPlugin : Plugin<String, String> {
-    override suspend fun execute(input: String?): String {
-        println("NotificationPlugin\t\texecuting with: $input")
-        return "notified-$input"
-    }
+    data class ValidationPluginArgument(
+        val value: String
+    )
+
+    data class ValidationPluginResult(
+        val value: String = "ValidationPluginResult SUCCESS!"
+    )
 }
