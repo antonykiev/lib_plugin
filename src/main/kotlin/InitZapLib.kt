@@ -1,16 +1,44 @@
+import AuthPlugin.AuthPluginArgument
+import SyncPlugin.SyncPluginArgument
+import ValidationPlugin.ValidationPluginArgument
+import kotlinx.coroutines.flow.collect
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.filterIsInstance
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.supervisorScope
 
 
-suspend fun ZapLib.initZapLib() {
-    ZapMediator(
-        startPlugin = StartPlugin(),
-        authPlugin = AuthPlugin(),
-        syncPlugin = SyncPlugin(),
-        validationPlugin = ValidationPlugin(),
-        componentCreateListener = object : ComponentCreateListener {
-            override fun onFeatureComponentCreated(component: FeatureComponent) {
-                this@initZapLib.onFeatureComponentCreated(component)
+suspend fun ZapLib.initZapLib() = runBlocking {
+    val startPlugin = StartPlugin()
+
+
+    val authPlugin = AuthPlugin()
+    val syncPlugin = SyncPlugin()
+
+    launch {
+        startPlugin.invoke(Unit)
+        startPlugin.result
+            .filterIsInstance<PluginResult.Value<StartPlugin.StartPluginResult>>()
+            .collect {
+                authPlugin.invoke(AuthPluginArgument(it.value.environment))
+                syncPlugin.invoke(SyncPluginArgument(it.value.environment))
             }
-        },
-    ).invoke()
+    }
+
+    val validationPlugin = ValidationPlugin()
+
+    launch {
+        combine(
+            authPlugin.result
+                .filterIsInstance<PluginResult.Value<AuthPlugin.AuthPluginResult>>(),
+            syncPlugin.result
+                .filterIsInstance<PluginResult.Value<SyncPlugin.SyncPluginResult>>(),
+
+        ) { authPluginRes, syncPluginRes ->
+            validationPlugin.invoke(
+                ValidationPluginArgument("")
+            )
+        }.collect()
+    }
 }
