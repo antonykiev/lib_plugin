@@ -6,8 +6,6 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.filterIsInstance
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
-import kotlinx.coroutines.supervisorScope
-
 
 suspend fun ZapLib.initZapLib() = runBlocking {
     val startPlugin = StartPlugin()
