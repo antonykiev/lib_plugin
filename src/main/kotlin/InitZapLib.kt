@@ -8,8 +8,8 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 
 suspend fun ZapLib.initZapLib() = runBlocking {
-    val startPlugin = StartPlugin()
 
+    val startPlugin = StartPlugin()
     val authPlugin = AuthPlugin()
     val syncPlugin = SyncPlugin()
     val validationPlugin = ValidationPlugin()
@@ -30,7 +30,6 @@ suspend fun ZapLib.initZapLib() = runBlocking {
                 .filterIsInstance<PluginResult.Value<AuthPlugin.AuthPluginResult>>(),
             syncPlugin.result
                 .filterIsInstance<PluginResult.Value<SyncPlugin.SyncPluginResult>>(),
-
         ) { authPluginRes, syncPluginRes ->
             validationPlugin.invoke(
                 ValidationPluginArgument("")
