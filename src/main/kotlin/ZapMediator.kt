@@ -10,6 +10,7 @@ class ZapMediator(
     private val authPlugin: AuthPlugin,
     private val syncPlugin: SyncPlugin,
     private val validationPlugin: ValidationPlugin,
+    private val componentCreateListener: ComponentCreateListener,
 ) {
 
     suspend operator fun invoke() {
@@ -55,6 +56,7 @@ class ZapMediator(
                 }
 
                 AppState.ValidatePluginDone -> {
+                    componentCreateListener.onFeatureComponentCreated(FeatureComponent())
                     println("Mediator has finished work!!!")
                 }
 

@@ -5,11 +5,13 @@ suspend fun ZapLib(block: ZapLibBuilder.() -> Unit): ZapLib {
 }
 
 class ZapLibBuilder {
+    var onFeatureComponentCreatedCallback: (FeatureComponent) -> Unit = {}
     var environment = "DEV"
 
     suspend fun start(): ZapLib {
         return ZapLib(
-            environment = environment
+            environment = environment,
+            onFeatureComponentCreated = onFeatureComponentCreatedCallback
         ).start()
     }
 }

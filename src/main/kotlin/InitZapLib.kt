@@ -6,6 +6,11 @@ suspend fun ZapLib.initZapLib() {
         startPlugin = StartPlugin(),
         authPlugin = AuthPlugin(),
         syncPlugin = SyncPlugin(),
-        validationPlugin = ValidationPlugin()
+        validationPlugin = ValidationPlugin(),
+        componentCreateListener = object : ComponentCreateListener {
+            override fun onFeatureComponentCreated(component: FeatureComponent) {
+                this@initZapLib.onFeatureComponentCreated(component)
+            }
+        },
     ).invoke()
 }
