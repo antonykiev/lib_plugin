@@ -1,5 +1,6 @@
 plugins {
     kotlin("jvm") version "2.0.21"
+    id("com.google.devtools.ksp") version "2.0.21-1.0.25"
 }
 
 group = "org.pet.project"
@@ -11,6 +12,9 @@ repositories {
 
 dependencies {
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.8.0")
+
+    // Use external processor module
+    ksp(project(":processor"))
 
     testImplementation(kotlin("test"))
 }

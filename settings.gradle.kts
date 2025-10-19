@@ -3,3 +3,4 @@ plugins {
 }
 rootProject.name = "lib"
 
+include(":processor")

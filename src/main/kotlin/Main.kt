@@ -1,13 +1,10 @@
 import kotlinx.coroutines.runBlocking
 
+object ZapLibImpl : ZapLibConstructor
 
 fun main() = runBlocking {
-    val zapLib: ZapLib = ZapLib {
-        environment = "PROD"
-        onFeatureComponentCreatedCallback = { featureComponent ->
-            println("FEATURE COMPONENT [$featureComponent]")
-        }
-    }.start()
-
     println("Successfully launched ZAP-LIB!!!")
+
+    val feature = ZapLibImpl.featureComponent()
+    println("featureComponent() generated and invoked: $feature")
 }
